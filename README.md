@@ -21,7 +21,6 @@
   - [🎯 Planned Upgrades](#-planned-upgrades)
   - [⚠️ Disclaimer](#%EF%B8%8F%EF%B8%8F-disclaimer)
   - [📜 License](#-license)
-  - [📧 Contact](#-professional-collaborations)
 
 ## 🔍 **Overview**
 
