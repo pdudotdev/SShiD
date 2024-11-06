@@ -13,7 +13,7 @@
   - [💪 Advantages](#-advantages)
   - [🛠️ Architecture](#%EF%B8%8F-architecture)
   - [🔄 Communication Flow](#-communication-flow)
-  - [🔐 Encryption and Hashing Algorithms](#-encryption-and-hashing-algorithms)
+  - [🔐 Encryption and Security](#-encryption-and-security)
   - [🕵 System Requirements](#-system-requirements)
   - [🖥️ Monitor Mode](#%EF%B8%8F-monitor-mode)
   - [⚒️ Installation](#%EF%B8%8F-installation)
