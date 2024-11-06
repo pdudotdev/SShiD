@@ -23,7 +23,6 @@ import random
 import struct
 import hashlib
 import logging
-import threading
 import subprocess
 from getpass import getpass
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
