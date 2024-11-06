@@ -13,6 +13,7 @@
   - [💪 Advantages](#-advantages)
   - [🛠️ Architecture](#%EF%B8%8F-architecture)
   - [🔄 Communication Flow](#-communication-flow)
+  - [🔐 Encryption and Hashing Algorithms](#-encryption-and-hashing-algorithms)
   - [🕵 System Requirements](#-system-requirements)
   - [🖥️ Monitor Mode](#%EF%B8%8F-monitor-mode)
   - [⚒️ Installation](#%EF%B8%8F-installation)
@@ -94,6 +95,144 @@ Make sure that the **Listener** is running and listening *prior* to executing th
    - Broadcasting and listening are turned off.
 
 🍀 **NOTE:** **SShiD** enables **one-to-many** communication between the **Speaker** and any **Listener** who knows the password. Therefore, the message exchange is **not** bidirectional.
+
+## 🔐 **Encryption and Security**
+
+### Choice of Encryption and Hashing Algorithms
+
+SShiD employs robust cryptographic algorithms to ensure the confidentiality and integrity of messages transmitted via Wi-Fi beacon frames. The following algorithms were chosen for their security and performance:
+
+- **Key Derivation Function (KDF): PBKDF2HMAC with SHA-256**
+  - **Reason for Choice:** PBKDF2 (Password-Based Key Derivation Function 2) with HMAC-SHA256 is a widely accepted standard for deriving cryptographic keys from passwords. It incorporates a salt and a high iteration count to mitigate brute-force and rainbow table attacks.
+
+- **Symmetric Encryption: ChaCha20-Poly1305**
+  - **Reason for Choice:** ChaCha20-Poly1305 is an authenticated encryption algorithm that provides both confidentiality and integrity. It is designed to be efficient in software and resistant to timing attacks. It is also used in modern protocols like TLS 1.3.
+
+- **Hashing Algorithm: SHA-256**
+  - **Reason for Choice:** SHA-256 is a cryptographic hash function that produces a 256-bit hash value. It is widely used and considered secure for generating unique identifiers, such as the SSID in this application.
+
+### How Encryption and Hashing Secure the Communication
+
+#### 1. Generating a Shared Secret SSID
+
+- **Purpose:** Both the Speaker and Listener need to identify each other without broadcasting a known SSID that could be easily intercepted.
+
+- **Process:**
+  - The user provides a **secret password**.
+  - **SHA-256** is used to hash the password combined with a fixed salt (`b'sshid_ssid_salt'`).
+
+    ```python
+    ssid_salt = b'sshid_ssid_salt'
+    ssid_hash = hashlib.sha256(password.encode() + ssid_salt).digest()
+    ```
+
+  - The resulting hash is encoded using Base64 URL-safe encoding and truncated to create a unique, non-guessable SSID.
+
+    ```python
+    ssid = base64.urlsafe_b64encode(ssid_hash).decode('utf-8').rstrip('=')[:10]
+    ```
+
+- **Security Benefit:** Only users who know the secret password can generate the same SSID, preventing unauthorized parties from easily discovering the communication.
+
+#### 2. Deriving the Encryption Key
+
+- **Purpose:** Create a strong encryption key from the user-provided password to encrypt the message securely.
+
+- **Process:**
+  - Uses **PBKDF2HMAC** with SHA-256 to derive a 256-bit key from the password and a fixed salt (`b'sshid_encryption_salt'`).
+
+    ```python
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=encryption_salt,
+        iterations=100000,
+    )
+    key = kdf.derive(password.encode())
+    ```
+
+  - The iteration count (100,000) adds computational complexity, making brute-force attacks more difficult.
+
+- **Security Benefit:** The derived key is cryptographically strong and resistant to attacks targeting weak or predictable keys.
+
+#### 3. Encrypting the Message
+
+- **Purpose:** Ensure that the message content remains confidential and tamper-proof during transmission.
+
+- **Process:**
+  - Generates a random 12-byte **nonce** for use with the ChaCha20-Poly1305 algorithm.
+
+    ```python
+    nonce = os.urandom(12)
+    ```
+
+  - Uses **ChaCha20-Poly1305** to encrypt the message with the derived key and nonce.
+
+    ```python
+    aead = ChaCha20Poly1305(key)
+    ciphertext = aead.encrypt(nonce, message.encode('utf-8'), None)
+    ```
+
+  - Combines the nonce and ciphertext, then encodes them using Base64 URL-safe encoding for inclusion in the beacon frame.
+
+    ```python
+    data = nonce + ciphertext
+    encoded_data = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+    ```
+
+- **Security Benefit:**
+  - **Confidentiality:** Only users with the correct key can decrypt the message.
+  - **Integrity and Authenticity:** ChaCha20-Poly1305 provides built-in authentication, ensuring the message hasn't been tampered with.
+
+#### 4. Including the Encrypted Message in Beacon Frames
+
+- **Purpose:** Transmit the encrypted message covertly within Wi-Fi beacon frames.
+
+- **Process:**
+  - Constructs a **Vendor-Specific Information Element (IE)** in the beacon frame, including the encrypted message.
+
+    ```python
+    vendor_ie_info = vendor_oui_bytes + vendor_oui_type + encoded_data_bytes
+    vendor_ie = Dot11Elt(ID=221, info=vendor_ie_info)
+    ```
+
+  - The beacon frame is broadcasted, and only listeners with the correct SSID and decryption key can retrieve and decrypt the message.
+
+- **Security Benefit:** The message is hidden within standard Wi-Fi management frames, reducing the likelihood of detection by unauthorized parties.
+
+#### 5. Decrypting the Message on the Listener
+
+- **Purpose:** Allow the intended recipient to read the message securely.
+
+- **Process:**
+  - The Listener extracts the nonce and ciphertext from the received beacon frame.
+  - Uses the same derived key and **ChaCha20-Poly1305** to decrypt the message.
+
+    ```python
+    plaintext = aead.decrypt(nonce, ciphertext, None)
+    ```
+
+- **Security Benefit:** Ensures that only recipients with the correct password can access the message content.
+
+### Summary of Security Measures
+
+- **Password-Based Security:** The use of a shared secret password ensures that only authorized users can generate the correct SSID and derive the encryption key.
+
+- **Strong Cryptographic Algorithms:** Utilizing PBKDF2HMAC, SHA-256, and ChaCha20-Poly1305 provides a high level of security against known cryptographic attacks.
+
+- **Nonce Usage:** The inclusion of a random nonce for each message prevents replay attacks and ensures that the same message encrypted multiple times will result in different ciphertexts.
+
+- **Covert Communication:** Embedding the encrypted message within Wi-Fi beacon frames allows for discreet transmission without establishing a traditional network connection.
+
+### Important Considerations
+
+- **Secure Passwords:** Users should choose strong, unique passwords to prevent brute-force attacks.
+
+- **Limited Exposure:** Since beacon frames are broadcasted, it's essential to minimize the transmission duration to reduce the risk of interception.
+
+- **Environment Awareness:** Be mindful of local regulations and potential interference with other wireless networks when using this application.
+
+By carefully integrating these encryption and hashing operations, SShiD ensures secure and confidential communication over Wi-Fi beacon frames, suitable for covert message transmission between parties who share a secret password.
 
 ## 🕵 **System Requirements**
 
