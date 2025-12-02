@@ -36,7 +36,7 @@
 - **Vendor-Specific IEs:** Embeds messages within standard-compliant beacon frames.
 - **Channel Specification:** Operates on a user-defined Wi-Fi channel (default is 1).
 
-- **Reliability of using beacon frames for the communication flow.**
+- **NOTE!** Reliability of using beacon frames for the communication flow.
   - For the sake of blending our covert traffic into the overall traffic, keep in mind that **communication via SShiD will not always be 100% reliable**. Since we're using broadcast messages over Wi-Fi, there's always a chance that packets can be lost due to network congestion, wireless interference, or other factors.
 
 ## ⚖️ **Architecture**
@@ -108,6 +108,8 @@ sudo dmesg | grep -i <driver_name>
 🍀 **NOTE:** Do your own research on your adapter and any issues related to Monitor mode. Best case scenario, you need a driver update. Otherwise, you need an adapter that supports Monitor mode. The cheapest option may be **TP-Link TL-WN722N**. Here's a tutorial on how to set it up to allow Monitor mode:
 - [YouTube Tutorial](https://www.youtube.com/watch?v=LzfQAtndtLI)
 
+✅ On the other hand, the most effective adapter for using Monitor mode and properly injecting data into beacons is possibly **Alfa Network AWUS036ACM** - which I use in my lab.
+
 To **disable Monitor mode** and re-enable the default **Managed mode**:
 ```bash
 sudo iw dev wlan0 set type managed
@@ -118,33 +120,35 @@ sudo systemctl start NetworkManager
 
 1. **Clone the Repository:**
    ```bash
+   mkdir sshid
+   cd sshid
+   python3 -m venv .sshid
+   source .sshid/bin/activate
    git clone https://github.com/pdudotdev/SShiD.git
-   cd SShiD
    ```
 
 2. **Install Dependencies:**
    ```bash
-   sudo apt install python3-scapy
-   sudo apt install python3-cryptography
+   pip install scapy cryptography colorama
    ```
 
 ## ⛑️ **Usage**
 
 Both Speaker and Listener scripts require root privileges to send or sniff beacons. You can run the scripts using `sudo`:
 
-**Speaker:**
-   ```
-   sudo python3 speaker.py
-   ```
-
 **Listener:**
    ```
-   sudo python3 listener.py
+   sudo .sshid/bin/python SShiD/sshid/listener.py
+   ``
+
+**Speaker:**
+   ```
+   sudo .sshid/bin/python SShiD/sshid/speaker.py
    ```
 
-## 🔄 **Communication Flow**
+⚠️ **NOTE!** Make sure that the **Listener** is running and listening *prior* to starting the **Speaker**.
 
-Make sure that the **Listener** is running and listening *prior* to executing the **Speaker** script.
+## 🔄 **Communication Flow**
 
 1. **Initialization:**
    - **Speaker and Listener** share a secret password before using **SShiD**.
