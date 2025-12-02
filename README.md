@@ -139,7 +139,7 @@ Both Speaker and Listener scripts require root privileges to send or sniff beaco
 **Listener:**
    ```
    sudo .sshid/bin/python SShiD/sshid/listener.py
-   ``
+   ```
 
 **Speaker:**
    ```
