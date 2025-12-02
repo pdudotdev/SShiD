@@ -108,7 +108,7 @@ sudo dmesg | grep -i <driver_name>
 🍀 **NOTE:** Do your own research on your adapter and any issues related to Monitor mode. Best case scenario, you need a driver update. Otherwise, you need an adapter that supports Monitor mode. The cheapest option may be **TP-Link TL-WN722N**. Here's a tutorial on how to set it up to allow Monitor mode:
 - [YouTube Tutorial](https://www.youtube.com/watch?v=LzfQAtndtLI)
 
-✅ On the other hand, the most effective adapter for using Monitor mode and properly injecting data into beacons is possibly **Alfa Network AWUS036ACM** - which I use in my lab.
+✅ On the other hand, the most effective adapter for using Monitor mode and properly injecting data into beacons is possibly **Alfa Network AWUS036ACM** - which I use in my lab. I recommend this adapter for the **Speaker** machine, whilst for the **Listener** you can get away with either the integrated adapter or the aforementioned **TP-Link TL-WN722N**.
 
 To **disable Monitor mode** and re-enable the default **Managed mode**:
 ```bash
@@ -151,13 +151,13 @@ Both Speaker and Listener scripts require root privileges to send or sniff beaco
 ## 🔄 **Communication Flow**
 
 1. **Initialization:**
-   - **Speaker and Listener** share a secret password before using **SShiD**.
-   - Both set their wireless interfaces to monitor mode (see commands below).
+   - **Speaker** and **Listener** securely share a secret password before using **SShiD** (e.g. `test1234`).
+   - Both set their wireless interfaces to Monitor mode (see previous instructions).
 
 2. **SSID Generation:**
    - The **Speaker** generates a unique SSID by hashing the password.
-   - This SSID serves as an identifier for the Listener.
-   - The Listener derives the same SSID from the password.
+   - This SSID serves as an identifier for the **Listener**.
+   - The **Listener** derives the same SSID from the pre-shared password.
 
 3. **Message Encryption:**
    - The **Speaker** encrypts the message using ChaCha20-Poly1305 with a key derived from the password.
