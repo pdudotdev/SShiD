@@ -330,7 +330,7 @@ SShiD employs robust cryptographic algorithms to ensure the confidentiality and 
 
 ### Important Considerations
 
-- **Secure Passwords:** Users should choose strong, unique passwords to prevent brute-force attacks.
+- **Secure Passwords:** Users should choose strong, unique pre-shared passwords before using SShiD.
 
 - **Limited Exposure:** Since beacon frames are broadcasted, it's essential to minimize the transmission duration to reduce the risk of interception.
 
