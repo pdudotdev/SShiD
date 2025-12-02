@@ -33,6 +33,7 @@
 - **Covert Communication:** Transmit messages without active network connections.
 - **Encryption:** Utilizes ChaCha20-Poly1305 encryption for secure message transmission.
 - **Custom SSID Generation:** Creates unique SSIDs based on a shared secret password.
+- **Source Device Obfuscation:** The beacons are broadcasted using fake MAC addresses.
 - **Vendor-Specific IEs:** Embeds messages within standard-compliant beacon frames.
 - **Channel Specification:** Operates on a user-defined Wi-Fi channel (default is 1).
 
@@ -61,7 +62,7 @@ Both components use a shared secret password for SSID generation and message enc
 
 ## 🖥️ **Monitor Mode**
 
-Monitor mode should be enabled on **both** the Speaker and Listener machines prior to using **SShiD**.
+Monitor mode should be enabled on **both the Speaker and Listener** machines prior to using **SShiD**.
 To identify your wireless interface and check if it supports Monitor mode use:
 ```bash
 iw dev
@@ -77,19 +78,23 @@ sudo apt install aircrack-ng
 Then enter the following commands:
 ```bash
 sudo airmon-ng check kill
-sudo ip link set wlan0 down
-sudo iw dev wlan0 set type monitor
-sudo ip link set wlan0 up
+sudo ip link set wlx0 down
+sudo iw dev wlx0 set type monitor
+sudo ip link set wlx0 up
 ```
 Or, if you prefer:
 ```bash
 sudo airmon-ng check kill
-sudo airmon-ng start wlan0
+sudo airmon-ng start wlx0
 ```
+
+⚠️ Make sure you replace **wlp3s0** with the name of your own wireless interface.
 
 After enabling Monitor mode, check with `iwconfig` to see if your interface shows **Mode: Monitor**.
 
-Some WiFi cards may show support for Monitor mode but not function properly, for instance when capturing frames. 
+![l1](docs/l1.png)
+
+⚠️ Some WiFi cards may show support for Monitor mode but not function properly, for instance when capturing frames. 
 
 To check your **wireless adapter driver** use:
 ```bash
@@ -156,8 +161,10 @@ Both Speaker and Listener scripts require root privileges to send or sniff beaco
 
 2. **SSID Generation:**
    - The **Speaker** generates a unique SSID by hashing the password.
-   - This SSID serves as an identifier for the **Listener**.
+   - This SSID serves as a beacon identifier for the **Listener**.
    - The **Listener** derives the same SSID from the pre-shared password.
+
+![l2](docs/l2.png)
 
 3. **Message Encryption:**
    - The **Speaker** encrypts the message using ChaCha20-Poly1305 with a key derived from the password.
@@ -168,6 +175,8 @@ Both Speaker and Listener scripts require root privileges to send or sniff beaco
      - The encrypted message embedded in a Vendor-Specific IE.
      - Standard IEs like RSN information for compliance.
 
+![s1](docs/s1.png)
+
 5. **Broadcasting:**
    - The **Speaker** broadcasts a set of 50 beacon frames.
 
@@ -175,13 +184,19 @@ Both Speaker and Listener scripts require root privileges to send or sniff beaco
    - The **Listener** captures beacon frames in monitor mode.
    - Captures only frames matching the unique SSID.
 
+![l3](docs/l3.png)
+
 7. **Message Extraction:**
    - The **Listener** extracts the encrypted message from the Vendor-Specific IE.
    - Decrypts the message using the shared password.
 
+![l4](docs/l4.png)
+
 8. **Output:**
    - The decrypted message is displayed to the user.
    - Broadcasting and listening are turned off.
+
+![l5](docs/l5.png)
 
 🍀 **NOTE:** **SShiD** enables **one-to-many** communication between the **Speaker** and any **Listener** who knows the password. Therefore, the message exchange is **not** bidirectional.
 
