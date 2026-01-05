@@ -36,6 +36,56 @@ decryption_failed = False
 vendor_oui = 0xACDE48
 vendor_oui_bytes = vendor_oui.to_bytes(3, byteorder='big')
 
+def get_wireless_interface():
+    """
+    Detects and returns the name of the wireless interface.
+
+    Returns:
+        str: The name of the wireless interface to use.
+
+    Raises:
+        SystemExit: If no wireless interfaces are found or an invalid selection is made.
+    """
+    try:
+        result = subprocess.run(['iw', 'dev'], capture_output=True, text=True)
+        lines = result.stdout.splitlines()
+        interfaces = [line.strip().split(' ')[1] for line in lines if 'Interface' in line]
+        if not interfaces:
+            logging.error('No wireless interfaces found.')
+            sys.exit(1)
+        elif len(interfaces) == 1:
+            return interfaces[0]
+        else:
+            logging.info('Multiple wireless interfaces detected:')
+            for idx, iface in enumerate(interfaces):
+                logging.info(f'{idx + 1}: {iface}')
+            choice = int(input('[INPUT] Select interface [1-{}]: '.format(len(interfaces))))
+            if 1 <= choice <= len(interfaces):
+                return interfaces[choice - 1]
+            else:
+                logging.error('Invalid selection.')
+                sys.exit(1)
+    except Exception as e:
+        logging.error(f'Error detecting wireless interface: {e}')
+        sys.exit(1)
+
+def generate_ssid_identifier(password):
+    """
+    Generates an SSID identifier by hashing the password and encoding it.
+
+    Args:
+        password (str): The secret password provided by the user.
+
+    Returns:
+        str: A Base64 URL-safe encoded string used as the SSID.
+    """
+    # Use a fixed salt for the SSID hash to ensure both parties generate the same SSID
+    ssid_salt = b'sshid_ssid_salt'
+    ssid_hash = hashlib.sha256(password.encode() + ssid_salt).digest()
+    # Use Base64 URL-safe encoding and truncate to 10 characters
+    ssid = base64.urlsafe_b64encode(ssid_hash).decode('utf-8').rstrip('=')[:10]
+    return ssid
+
 def derive_key(password, salt, iterations=100000):
     """
     Derives a cryptographic key from a password using PBKDF2HMAC.
@@ -56,23 +106,6 @@ def derive_key(password, salt, iterations=100000):
     )
     key = kdf.derive(password.encode())
     return key
-
-def generate_ssid_identifier(password):
-    """
-    Generates an SSID identifier by hashing the password and encoding it.
-
-    Args:
-        password (str): The secret password provided by the user.
-
-    Returns:
-        str: A Base64 URL-safe encoded string used as the SSID.
-    """
-    # Use a fixed salt for the SSID hash to ensure both parties generate the same SSID
-    ssid_salt = b'sshid_ssid_salt'
-    ssid_hash = hashlib.sha256(password.encode() + ssid_salt).digest()
-    # Use Base64 URL-safe encoding and truncate to 10 characters
-    ssid = base64.urlsafe_b64encode(ssid_hash).decode('utf-8').rstrip('=')[:10]
-    return ssid
 
 def decrypt_message(nonce, ciphertext, key):
     """
@@ -107,39 +140,6 @@ def decode_data(encoded_data):
     nonce = data[:12]  # First 12 bytes are the nonce
     ciphertext = data[12:]
     return nonce, ciphertext
-
-def get_wireless_interface():
-    """
-    Detects and returns the name of the wireless interface.
-
-    Returns:
-        str: The name of the wireless interface to use.
-
-    Raises:
-        SystemExit: If no wireless interfaces are found or an invalid selection is made.
-    """
-    try:
-        result = subprocess.run(['iw', 'dev'], capture_output=True, text=True)
-        lines = result.stdout.splitlines()
-        interfaces = [line.strip().split(' ')[1] for line in lines if 'Interface' in line]
-        if not interfaces:
-            logging.error('No wireless interfaces found.')
-            sys.exit(1)
-        elif len(interfaces) == 1:
-            return interfaces[0]
-        else:
-            logging.info('Multiple wireless interfaces detected:')
-            for idx, iface in enumerate(interfaces):
-                logging.info(f'{idx + 1}: {iface}')
-            choice = int(input('[INPUT] Select interface [1-{}]: '.format(len(interfaces))))
-            if 1 <= choice <= len(interfaces):
-                return interfaces[choice - 1]
-            else:
-                logging.error('Invalid selection.')
-                sys.exit(1)
-    except Exception as e:
-        logging.error(f'Error detecting wireless interface: {e}')
-        sys.exit(1)
 
 def process_packet(packet, target_ssid, key):
     """
