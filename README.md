@@ -69,7 +69,7 @@ iw dev
 sudo iw list | grep -A 10 "Supported interface modes"
 ```
 
-To **enable Monitor mode** (assuming `wlan0` is your interface) use:
+To **enable Monitor mode** (assuming `wlx0` is your interface) use:
 ```bash
 sudo apt update
 sudo apt install aircrack-ng
@@ -88,7 +88,7 @@ sudo airmon-ng check kill
 sudo airmon-ng start wlx0
 ```
 
-⚠️ Make sure you replace **wlp3s0** with the name of your own wireless interface.
+⚠️ Make sure you replace **wlx0** with the name of your own wireless interface.
 
 After enabling Monitor mode, check with `iwconfig` to see if your interface shows **Mode: Monitor**.
 
@@ -117,7 +117,7 @@ sudo dmesg | grep -i <driver_name>
 
 To **disable Monitor mode** and re-enable the default **Managed mode**:
 ```bash
-sudo iw dev wlan0 set type managed
+sudo iw dev wlx0 set type managed
 sudo systemctl start NetworkManager
 ```
 
