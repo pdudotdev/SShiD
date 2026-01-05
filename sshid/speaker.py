@@ -33,76 +33,6 @@ from scapy.all import RadioTap, Dot11, Dot11Beacon, Dot11Elt, sendp
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 #logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(message)s')
 
-def derive_key(password, salt, iterations=100000):
-    """
-    Derives a cryptographic key from a password using PBKDF2HMAC.
-
-    Args:
-        password (str): The password provided by the user.
-        salt (bytes): A unique salt value for key derivation.
-        iterations (int): The number of iterations for the KDF (default: 100,000).
-
-    Returns:
-        bytes: A 256-bit (32-byte) key derived from the password.
-    """
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,  # 256 bits
-        salt=salt,
-        iterations=iterations,
-    )
-    key = kdf.derive(password.encode())
-    return key
-
-def generate_ssid_identifier(password):
-    """
-    Generates an SSID identifier by hashing the password and encoding it.
-
-    Args:
-        password (str): The secret password provided by the user.
-
-    Returns:
-        str: A Base64 URL-safe encoded string used as the SSID.
-    """
-    # Use a fixed salt for the SSID hash to ensure both parties generate the same SSID
-    ssid_salt = b'sshid_ssid_salt'
-    ssid_hash = hashlib.sha256(password.encode() + ssid_salt).digest()
-    # Use Base64 URL-safe encoding and truncate to 10 characters
-    ssid = base64.urlsafe_b64encode(ssid_hash).decode('utf-8').rstrip('=')[:10]
-    return ssid
-
-def encrypt_message(message, key):
-    """
-    Encrypts a plaintext message using ChaCha20-Poly1305.
-
-    Args:
-        message (str): The plaintext message to encrypt.
-        key (bytes): The encryption key derived from the password.
-
-    Returns:
-        tuple: A tuple containing the nonce (bytes) and ciphertext (bytes).
-    """
-    # Generate a random 12-byte nonce
-    nonce = os.urandom(12)
-    aead = ChaCha20Poly1305(key)
-    ciphertext = aead.encrypt(nonce, message.encode('utf-8'), None)
-    return nonce, ciphertext
-
-def encode_data(nonce, ciphertext):
-    """
-    Encodes the nonce and ciphertext into a Base64 URL-safe string.
-
-    Args:
-        nonce (bytes): The nonce used during encryption.
-        ciphertext (bytes): The encrypted message.
-
-    Returns:
-        str: The Base64 URL-safe encoded string containing the nonce and ciphertext.
-    """
-    data = nonce + ciphertext
-    encoded_data = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
-    return encoded_data
-
 def get_wireless_interface():
     """
     Detects and returns the name of the wireless interface.
@@ -135,6 +65,76 @@ def get_wireless_interface():
     except Exception as e:
         logging.error(f'Error detecting wireless interface: {e}')
         sys.exit(1)
+
+def generate_ssid_identifier(password):
+    """
+    Generates an SSID identifier by hashing the password and encoding it.
+
+    Args:
+        password (str): The secret password provided by the user.
+
+    Returns:
+        str: A Base64 URL-safe encoded string used as the SSID.
+    """
+    # Use a fixed salt for the SSID hash to ensure both parties generate the same SSID
+    ssid_salt = b'sshid_ssid_salt'
+    ssid_hash = hashlib.sha256(password.encode() + ssid_salt).digest()
+    # Use Base64 URL-safe encoding and truncate to 10 characters
+    ssid = base64.urlsafe_b64encode(ssid_hash).decode('utf-8').rstrip('=')[:10]
+    return ssid
+
+def derive_key(password, salt, iterations=100000):
+    """
+    Derives a cryptographic key from a password using PBKDF2HMAC.
+
+    Args:
+        password (str): The password provided by the user.
+        salt (bytes): A unique salt value for key derivation.
+        iterations (int): The number of iterations for the KDF (default: 100,000).
+
+    Returns:
+        bytes: A 256-bit (32-byte) key derived from the password.
+    """
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,  # 256 bits
+        salt=salt,
+        iterations=iterations,
+    )
+    key = kdf.derive(password.encode())
+    return key
+
+def encrypt_message(message, key):
+    """
+    Encrypts a plaintext message using ChaCha20-Poly1305.
+
+    Args:
+        message (str): The plaintext message to encrypt.
+        key (bytes): The encryption key derived from the password.
+
+    Returns:
+        tuple: A tuple containing the nonce (bytes) and ciphertext (bytes).
+    """
+    # Generate a random 12-byte nonce
+    nonce = os.urandom(12)
+    aead = ChaCha20Poly1305(key)
+    ciphertext = aead.encrypt(nonce, message.encode('utf-8'), None)
+    return nonce, ciphertext
+
+def encode_data(nonce, ciphertext):
+    """
+    Encodes the nonce and ciphertext into a Base64 URL-safe string.
+
+    Args:
+        nonce (bytes): The nonce used during encryption.
+        ciphertext (bytes): The encrypted message.
+
+    Returns:
+        str: The Base64 URL-safe encoded string containing the nonce and ciphertext.
+    """
+    data = nonce + ciphertext
+    encoded_data = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+    return encoded_data
 
 def generate_random_mac():
     mac = [0x00, 0x16, 0x3e,
