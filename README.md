@@ -1,5 +1,5 @@
 ![SShiD](docs/SShiD.png)
-# 📡 SShiD - Covert Communication via SSID Beacons 📡
+# 📡 SShiD: Covert Communication via SSID Beacons 📡
 
 ![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)
 [![Stable Release](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/pdudotdev/SShiD/releases/tag/v0.2.0)
